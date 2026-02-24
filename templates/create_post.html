@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} – FlaskBlog{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width:900px">
+  <div class="d-flex align-items-center mb-4">
+    <a href="{{ url_for('main.author_dashboard') }}" class="btn btn-outline-secondary btn-sm me-3">
+      <i class="fas fa-arrow-left"></i>
+    </a>
+    <h3 class="mb-0 fw-bold">{{ title }}</h3>
+    <span class="badge bg-primary ms-3">Markdown Supported</span>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body p-4">
+      <form method="POST" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div class="mb-3">
+          {{ form.title.label(class='form-label fw-semibold') }}
+          {{ form.title(class='form-control form-control-lg' + (' is-invalid' if form.title.errors else ''), placeholder='Your post title...') }}
+          {% for e in form.title.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-sm-6">
+            {{ form.category.label(class='form-label fw-semibold') }}
+            {{ form.category(class='form-control', placeholder='e.g. Technology, Travel') }}
+          </div>
+          <div class="col-sm-6">
+            {{ form.excerpt.label(class='form-label fw-semibold') }}
+            {{ form.excerpt(class='form-control', placeholder='Short description shown on cards') }}
+          </div>
+        </div>
+
+        <!-- Markdown Toolbar -->
+        <div class="mb-2">
+          <label class="form-label fw-semibold">Content <small class="text-muted">(Markdown supported)</small></label>
+          <div class="markdown-toolbar mb-2 d-flex flex-wrap gap-1">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insertMd('**','**')" title="Bold"><i class="fas fa-bold"></i></button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insertMd('*','*')" title="Italic"><i class="fas fa-italic"></i></button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insertMd('# ','')" title="Heading 1"><b>H1</b></button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insertMd('## ','')" title="Heading 2"><b>H2</b></button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insertMd('### ','')" title="Heading 3"><b>H3</b></button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insertMd('- ','')" title="Bullet List"><i class="fas fa-list-ul"></i></button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insertMd('1. ','')" title="Numbered List"><i class="fas fa-list-ol"></i></button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insertMd('[','](url)')" title="Link"><i class="fas fa-link"></i></button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insertMd('`','`')" title="Inline Code"><i class="fas fa-code"></i></button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insertMd('```\n','\n```')" title="Code Block"><i class="fas fa-file-code"></i></button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insertMd('> ','')" title="Blockquote"><i class="fas fa-quote-right"></i></button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insertMd('---\n','')" title="Horizontal Line"><i class="fas fa-minus"></i></button>
+            <button type="button" class="btn btn-sm btn-primary ms-auto" onclick="togglePreview()" id="previewBtn">
+              <i class="fas fa-eye me-1"></i>Preview
+            </button>
+          </div>
+
+          <!-- Editor and Preview side by side -->
+          <div class="row g-2">
+            <div class="col-12" id="editorCol">
+              {{ form.content(class='form-control' + (' is-invalid' if form.content.errors else ''), rows='16', placeholder='Write your post ', id='contentEditor') }}
+              {% for e in form.content.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="col-12 d-none" id="previewCol">
+              <div class="border rounded p-3 bg-white markdown-preview" id="previewArea" style="min-height:380px; overflow-y:auto;">
+                <p class="text-muted">Preview will appear here...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+    
+
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <div class="form-check form-switch">
+            {{ form.is_published(class='form-check-input', role='switch', id='publishSwitch') }}
+            <label class="form-check-label fw-semibold" for="publishSwitch">Publish immediately</label>
+          </div>
+          <div>
+            <a href="{{ url_for('main.author_dashboard') }}" class="btn btn-outline-secondary me-2">Cancel</a>
+            {{ form.submit(class='btn btn-primary px-4') }}
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Marked.js for live preview -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+  .markdown-preview h1, .markdown-preview h2, .markdown-preview h3 { font-weight: 700; margin-top: 1rem; }
+  .markdown-preview code { background: #f1f0ff; padding: 2px 6px; border-radius: 4px; color: #4f46e5; }
+  .markdown-preview pre { background: #1e1e2e; color: #cdd6f4; padding: 16px; border-radius: 8px; }
+  .markdown-preview pre code { background: none; color: inherit; }
+  .markdown-preview blockquote { border-left: 4px solid #4f46e5; padding-left: 16px; color: #666; }
+  .markdown-preview table { width: 100%; border-collapse: collapse; }
+  .markdown-preview th, .markdown-preview td { border: 1px solid #ddd; padding: 8px; }
+  .markdown-preview th { background: #f1f0ff; }
+  .markdown-toolbar button { font-size: 0.8rem; }
+</style>
+
+<script>
+  let previewVisible = false;
+
+  function insertMd(before, after) {
+    const editor = document.getElementById('contentEditor');
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    const selected = editor.value.substring(start, end);
+    const newText = before + selected + after;
+    editor.value = editor.value.substring(0, start) + newText + editor.value.substring(end);
+    editor.focus();
+    editor.setSelectionRange(start + before.length, start + before.length + selected.length);
+    updatePreview();
+  }
+
+  function updatePreview() {
+    const content = document.getElementById('contentEditor').value;
+    document.getElementById('previewArea').innerHTML = marked.parse(content) || '<p class="text-muted">Preview will appear here...</p>';
+  }
+
+  function togglePreview() {
+    previewVisible = !previewVisible;
+    const editorCol = document.getElementById('editorCol');
+    const previewCol = document.getElementById('previewCol');
+    const btn = document.getElementById('previewBtn');
+
+    if (previewVisible) {
+      editorCol.className = 'col-md-6';
+      previewCol.className = 'col-md-6';
+      btn.innerHTML = '<i class="fas fa-edit me-1"></i>Edit Only';
+      updatePreview();
+    } else {
+      editorCol.className = 'col-12';
+      previewCol.className = 'col-12 d-none';
+      btn.innerHTML = '<i class="fas fa-eye me-1"></i>Preview';
+    }
+  }
+
+  // Live preview update while typing
+  document.getElementById('contentEditor').addEventListener('input', function() {
+    if (previewVisible) updatePreview();
+  });
+</script>
+{% endblock %}

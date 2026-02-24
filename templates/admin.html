@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% block title %}Admin Panel – FlaskBlog{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <h3 class="fw-bold mb-4"><i class="fas fa-cog me-2 text-danger"></i>Admin Panel</h3>
+
+  <!-- Stats -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-4">
+      <div class="card text-center shadow-sm border-0" style="border-left:4px solid #4f46e5!important">
+        <div class="card-body">
+          <h2 class="fw-bold text-primary">{{ users|length }}</h2>
+          <p class="mb-0 text-muted">Total Users</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-4">
+      <div class="card text-center shadow-sm">
+        <div class="card-body">
+          <h2 class="fw-bold text-success">{{ posts|selectattr('is_published')|list|length }}</h2>
+          <p class="mb-0 text-muted">Published Posts</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-4">
+      <div class="card text-center shadow-sm">
+        <div class="card-body">
+          <h2 class="fw-bold text-warning">{{ posts|rejectattr('is_published')|list|length }}</h2>
+          <p class="mb-0 text-muted">Drafts</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Users Table -->
+  <h5 class="fw-bold mb-3">All Users</h5>
+  <div class="card shadow-sm mb-5">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>User</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Auth</th>
+            <th>Joined</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in users %}
+          <tr>
+            <td><strong>{{ user.username }}</strong></td>
+            <td><small>{{ user.email }}</small></td>
+            <td>
+              <span class="badge {{ 'bg-danger' if user.is_admin() else ('bg-primary' if user.is_author() else 'bg-secondary') }}">
+                {{ user.role }}
+              </span>
+            </td>
+            <td>
+              {% if user.firebase_uid %}
+              <span class="badge bg-info"><i class="fab fa-google"></i> Google</span>
+              {% else %}
+              <span class="badge bg-light text-dark">Email</span>
+              {% endif %}
+            </td>
+            <td><small class="text-muted">{{ user.created_at.strftime('%b %d, %Y') }}</small></td>
+            <td>
+              <form method="POST" action="{{ url_for('main.update_role', user_id=user.id) }}" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <select name="role" class="form-select form-select-sm d-inline w-auto me-1" onchange="this.form.submit()">
+                  {% for r in ['user','author','admin'] %}
+                  <option value="{{ r }}" {% if user.role == r %}selected{% endif %}>{{ r }}</option>
+                  {% endfor %}
+                </select>
+              </form>
+              {% if user.id != current_user.id %}
+              <form method="POST" action="{{ url_for('main.delete_user', user_id=user.id) }}" class="d-inline" onsubmit="return confirm('Delete user {{ user.username }}?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Posts Table -->
+  <h5 class="fw-bold mb-3">All Posts</h5>
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Title</th>
+            <th>Author</th>
+            <th>Category</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for post in posts %}
+          <tr>
+            <td>
+              <a href="{{ url_for('main.post_detail', post_id=post.id) }}" class="text-decoration-none text-dark fw-semibold">
+                {{ post.title[:55] }}{% if post.title|length > 55 %}…{% endif %}
+              </a>
+            </td>
+            <td><small>{{ post.author.username }}</small></td>
+            <td>
+              {% if post.category %}<span class="badge badge-cat">{{ post.category }}</span>{% else %}—{% endif %}
+            </td>
+            <td>
+              <span class="badge {{ 'bg-success' if post.is_published else 'bg-secondary' }}">
+                {{ 'Published' if post.is_published else 'Draft' }}
+              </span>
+            </td>
+            <td><small class="text-muted">{{ post.created_at.strftime('%b %d, %Y') }}</small></td>
+            <td>
+              <a href="{{ url_for('main.edit_post', post_id=post.id) }}" class="btn btn-sm btn-outline-primary me-1">
+                <i class="fas fa-edit"></i>
+              </a>
+              <form method="POST" action="{{ url_for('main.delete_post', post_id=post.id) }}" class="d-inline" onsubmit="return confirm('Delete this post?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

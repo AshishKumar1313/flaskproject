@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FlaskBlog - Login</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
+      display: flex; flex-direction: column;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .topnav {
+      background: rgba(0,0,0,0.2); padding: 15px 30px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .brand { color: white; text-decoration: none; font-size: 1.4rem; font-weight: 800; }
+    .back-link { color: rgba(255,255,255,0.8); text-decoration: none; font-size: 0.9rem; }
+    .back-link:hover { color: white; }
+    .main-wrapper {
+      flex: 1; display: flex; align-items: center;
+      justify-content: center; padding: 40px 20px;
+    }
+    .auth-card {
+      background: white; border-radius: 24px; padding: 40px;
+      width: 100%; max-width: 460px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.25);
+    }
+    .auth-icon {
+      width: 70px; height: 70px;
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      border-radius: 50%; display: flex; align-items: center;
+      justify-content: center; margin: 0 auto 20px;
+      font-size: 1.8rem; color: white;
+    }
+    .auth-title { text-align: center; font-size: 1.6rem; font-weight: 800; color: #1e1e2e; margin-bottom: 6px; }
+    .auth-subtitle { text-align: center; color: #888; font-size: 0.9rem; margin-bottom: 28px; }
+    .tab-switcher {
+      display: flex; background: #f1f0ff;
+      border-radius: 12px; padding: 4px; margin-bottom: 28px;
+    }
+    .tab-btn {
+      flex: 1; text-align: center; padding: 10px; border-radius: 9px;
+      text-decoration: none; font-weight: 600; font-size: 0.9rem;
+      color: #888; transition: all 0.2s;
+    }
+    .tab-btn.active { background: white; color: #4f46e5; box-shadow: 0 2px 8px rgba(79,70,229,0.15); }
+    .form-group { margin-bottom: 18px; }
+    .form-label { display: block; font-weight: 600; font-size: 0.875rem; color: #374151; margin-bottom: 6px; }
+    .form-input {
+      width: 100%; padding: 12px 16px 12px 40px;
+      border: 2px solid #e5e7eb; border-radius: 10px;
+      font-size: 0.95rem; outline: none; color: #1e1e2e;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-input:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+    .form-input.error { border-color: #ef4444; }
+    .input-wrap { position: relative; }
+    .input-wrap i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #9ca3af; }
+    .error-msg { color: #ef4444; font-size: 0.8rem; margin-top: 4px; }
+    .remember-row { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; }
+    .remember-row input { width: 16px; height: 16px; accent-color: #4f46e5; }
+    .remember-row label { font-size: 0.875rem; color: #6b7280; cursor: pointer; }
+    .btn-submit {
+      width: 100%; padding: 13px;
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      color: white; border: none; border-radius: 10px;
+      font-size: 1rem; font-weight: 700; cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s; margin-bottom: 16px;
+    }
+    .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(79,70,229,0.35); }
+    .divider {
+      display: flex; align-items: center;
+      gap: 12px; margin: 16px 0; color: #9ca3af; font-size: 0.85rem;
+    }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #e5e7eb; }
+    .btn-google {
+      width: 100%; padding: 12px; background: white;
+      border: 2px solid #e5e7eb; border-radius: 10px;
+      font-size: 0.95rem; font-weight: 600; color: #374151;
+      cursor: pointer; display: flex; align-items: center;
+      justify-content: center; gap: 10px; transition: all 0.2s;
+    }
+    .btn-google:hover { border-color: #4f46e5; background: #f8f7ff; }
+    .btn-google img { width: 20px; height: 20px; }
+    .alert-box { padding: 12px 16px; border-radius: 10px; margin-bottom: 20px; font-size: 0.875rem; font-weight: 500; }
+    .alert-success { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+    .alert-danger  { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+    .alert-warning { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+    .alert-info    { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+  </style>
+</head>
+<body>
+
+<nav class="topnav">
+  <a href="/" class="brand"><i class="fas fa-feather-alt me-2"></i>FlaskBlog</a>
+  <a href="/" class="back-link"><i class="fas fa-home me-1"></i>Back to Home</a>
+</nav>
+
+<div class="main-wrapper">
+  <div class="auth-card">
+
+    <div class="auth-icon">
+      <i class="fas {% if mode == 'register' %}fa-user-plus{% else %}fa-sign-in-alt{% endif %}"></i>
+    </div>
+
+    <div class="auth-title">
+      {% if mode == 'register' %}Create Account{% else %}Welcome Back{% endif %}
+    </div>
+    <div class="auth-subtitle">
+      {% if mode == 'register' %}Join FlaskBlog today, it is free!{% else %}Sign in to continue{% endif %}
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, msg in messages %}
+      <div class="alert-box alert-{{ 'danger' if category == 'error' else category }}">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <div class="tab-switcher">
+      <a href="/login" class="tab-btn {% if mode == 'login' %}active{% endif %}">
+        <i class="fas fa-sign-in-alt me-1"></i>Login
+      </a>
+      <a href="/register" class="tab-btn {% if mode == 'register' %}active{% endif %}">
+        <i class="fas fa-user-plus me-1"></i>Register
+      </a>
+    </div>
+
+    <form method="POST" novalidate>
+      {{ form.hidden_tag() }}
+
+      {% if mode == 'register' %}
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <div class="input-wrap">
+          <i class="fas fa-user"></i>
+          {{ form.username(class='form-input' + (' error' if form.username.errors else ''), placeholder='Choose a username') }}
+        </div>
+        {% for e in form.username.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <div class="input-wrap">
+          <i class="fas fa-envelope"></i>
+          {{ form.email(class='form-input' + (' error' if form.email.errors else ''), placeholder='Enter your email') }}
+        </div>
+        {% for e in form.email.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <div class="input-wrap">
+          <i class="fas fa-lock"></i>
+          {{ form.password(class='form-input' + (' error' if form.password.errors else ''), placeholder='Enter password') }}
+        </div>
+        {% for e in form.password.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+      </div>
+
+      {% if mode == 'register' %}
+      <div class="form-group">
+        <label class="form-label">Confirm Password</label>
+        <div class="input-wrap">
+          <i class="fas fa-lock"></i>
+          {{ form.confirm_password(class='form-input' + (' error' if form.confirm_password.errors else ''), placeholder='Confirm your password') }}
+        </div>
+        {% for e in form.confirm_password.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+      </div>
+      {% else %}
+      <div class="remember-row">
+        {{ form.remember(id='remember') }}
+        <label for="remember">Remember me for 30 days</label>
+      </div>
+      {% endif %}
+
+      <button type="submit" class="btn-submit">
+        {% if mode == 'register' %}
+          <i class="fas fa-user-plus me-2"></i>Create Account
+        {% else %}
+          <i class="fas fa-sign-in-alt me-2"></i>Sign In
+        {% endif %}
+      </button>
+    </form>
+
+    <div class="divider">or continue with</div>
+
+    <form method="POST" action="/google-login" id="googleForm">
+      <input type="hidden" name="id_token" id="id_token"/>
+      <input type="hidden" name="email" id="g_email"/>
+      <input type="hidden" name="name" id="g_name"/>
+      <input type="hidden" name="photo" id="g_photo"/>
+      <input type="hidden" name="uid" id="g_uid"/>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <button type="button" id="googleBtn" class="btn-google">
+        <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google"/>
+        Continue with Google
+      </button>
+    </form>
+
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDWJ8dx65dFxr1Uej91u5XlKAUu4MOKHV4",
+    authDomain: "flaskblog-b6321.firebaseapp.com",
+    projectId: "flaskblog-b6321",
+    storageBucket: "flaskblog-b6321.firebasestorage.app",
+    messagingSenderId: "982957840032",
+    appId: "1:982957840032:web:112726d742ae87e62cdbc5"
+  };
+  firebase.initializeApp(firebaseConfig);
+  document.getElementById('googleBtn').addEventListener('click', async () => {
+    try {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      const result = await firebase.auth().signInWithPopup(provider);
+      const user = result.user;
+      const idToken = await user.getIdToken();
+      document.getElementById('id_token').value = idToken;
+      document.getElementById('g_email').value = user.email;
+      document.getElementById('g_name').value = user.displayName || '';
+      document.getElementById('g_photo').value = user.photoURL || '';
+      document.getElementById('g_uid').value = user.uid;
+      document.getElementById('googleForm').submit();
+    } catch(err) {
+      alert('Google login failed: ' + err.message);
+    }
+  });
+</script>
+</body>
+</html>

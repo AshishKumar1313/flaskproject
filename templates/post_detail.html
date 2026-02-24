@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% block title %}{{ post.title }} – FlaskBlog{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row">
+    <div class="col-lg-8 mx-auto">
+
+      <!-- Post Header -->
+      <div class="mb-4">
+        {% if post.category %}
+        <span class="badge badge-cat mb-2">{{ post.category }}</span>
+        {% endif %}
+        <h1 class="fw-bold">{{ post.title }}</h1>
+        <div class="d-flex align-items-center text-muted small mt-2 gap-3 flex-wrap">
+          <span><i class="fas fa-user-circle me-1"></i><strong>{{ post.author.username }}</strong></span>
+          <span><i class="fas fa-calendar-alt me-1"></i>{{ post.created_at.strftime('%B %d, %Y') }}</span>
+          <span><i class="fas fa-comments me-1"></i>{{ comments|length }} comments</span>
+        </div>
+      </div>
+
+      <!-- Edit/Delete for owner or admin -->
+      {% if current_user.is_authenticated and (current_user.id == post.user_id or current_user.is_admin()) %}
+      <div class="alert alert-info d-flex gap-2 align-items-center py-2 mb-4">
+        <span class="small fw-semibold me-auto">You own this post</span>
+        <a href="{{ url_for('main.edit_post', post_id=post.id) }}" class="btn btn-sm btn-outline-primary">
+          <i class="fas fa-edit me-1"></i>Edit
+        </a>
+        <form method="POST" action="{{ url_for('main.delete_post', post_id=post.id) }}"
+              onsubmit="return confirm('Delete this post?')" class="d-inline">
+          {{ form.hidden_tag() }}
+          <button type="submit" class="btn btn-sm btn-outline-danger">
+            <i class="fas fa-trash me-1"></i>Delete
+          </button>
+        </form>
+      </div>
+      {% endif %}
+
+      <!-- Post Content rendered as Markdown -->
+      <div class="card shadow-sm mb-5">
+        <div class="card-body p-4 markdown-body">
+          {{ post.content | markdown | safe }}
+        </div>
+      </div>
+
+      <!-- Comments Section -->
+      <h4 class="fw-bold mb-3">
+        <i class="fas fa-comments me-2 text-primary"></i>Comments ({{ comments|length }})
+      </h4>
+
+      {% if current_user.is_authenticated %}
+      <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+          <form method="POST" novalidate>
+            {{ form.hidden_tag() }}
+            <div class="mb-3">
+              {{ form.content.label(class='form-label fw-semibold') }}
+              {{ form.content(class='form-control' + (' is-invalid' if form.content.errors else ''), rows='3', placeholder='Share your thoughts...') }}
+              {% for e in form.content.errors %}
+              <div class="invalid-feedback">{{ e }}</div>
+              {% endfor %}
+            </div>
+            {{ form.submit(class='btn btn-primary') }}
+          </form>
+        </div>
+      </div>
+      {% else %}
+      <div class="alert alert-light border mb-4">
+        <a href="{{ url_for('main.login') }}" class="fw-bold text-primary">Login</a> to leave a comment.
+      </div>
+      {% endif %}
+
+      {% for comment in comments %}
+      <div class="card mb-3 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <strong>
+                <i class="fas fa-user-circle me-1 text-primary"></i>
+                {{ comment.commenter.username }}
+              </strong>
+              <small class="text-muted ms-2">
+                {{ comment.created_at.strftime('%b %d, %Y at %H:%M') }}
+              </small>
+            </div>
+            {% if current_user.is_authenticated and (current_user.id == comment.user_id or current_user.is_admin()) %}
+            <form method="POST" action="{{ url_for('main.delete_comment', comment_id=comment.id) }}"
+                  onsubmit="return confirm('Delete comment?')">
+              {{ form.hidden_tag() }}
+              <button type="submit" class="btn btn-sm btn-link text-danger p-0">
+                <i class="fas fa-times"></i>
+              </button>
+            </form>
+            {% endif %}
+          </div>
+          <p class="mt-2 mb-0">{{ comment.content }}</p>
+        </div>
+      </div>
+      {% else %}
+      <p class="text-muted">No comments yet. Be the first!</p>
+      {% endfor %}
+
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Markdown rendered styles */
+  .markdown-body h1, .markdown-body h2, .markdown-body h3,
+  .markdown-body h4, .markdown-body h5, .markdown-body h6 {
+    font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.5rem; color: #1e1e2e;
+  }
+  .markdown-body h1 { font-size: 2rem; border-bottom: 2px solid #ede9fe; padding-bottom: 8px; }
+  .markdown-body h2 { font-size: 1.5rem; border-bottom: 1px solid #ede9fe; padding-bottom: 6px; }
+  .markdown-body h3 { font-size: 1.2rem; }
+  .markdown-body p { line-height: 1.9; margin-bottom: 1rem; }
+  .markdown-body code {
+    background: #f1f0ff; padding: 2px 8px;
+    border-radius: 4px; color: #4f46e5; font-size: 0.9em;
+  }
+  .markdown-body pre {
+    background: #1e1e2e; color: #cdd6f4;
+    padding: 20px; border-radius: 10px; overflow-x: auto; margin: 1rem 0;
+  }
+  .markdown-body pre code { background: none; color: inherit; padding: 0; }
+  .markdown-body blockquote {
+    border-left: 4px solid #4f46e5; padding: 10px 20px;
+    margin: 1rem 0; background: #faf5ff; border-radius: 0 8px 8px 0;
+    color: #555;
+  }
+  .markdown-body ul, .markdown-body ol { padding-left: 2rem; margin-bottom: 1rem; }
+  .markdown-body li { margin-bottom: 0.3rem; line-height: 1.7; }
+  .markdown-body table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  .markdown-body th { background: #f1f0ff; font-weight: 700; }
+  .markdown-body th, .markdown-body td { border: 1px solid #ddd; padding: 10px 14px; }
+  .markdown-body tr:nth-child(even) { background: #fafafa; }
+  .markdown-body a { color: #4f46e5; text-decoration: underline; }
+  .markdown-body a:hover { color: #7c3aed; }
+  .markdown-body hr { border: none; border-top: 2px solid #ede9fe; margin: 2rem 0; }
+  .markdown-body img { max-width: 100%; border-radius: 8px; margin: 1rem 0; }
+  .markdown-body strong { color: #1e1e2e; }
+</style>
+{% endblock %}

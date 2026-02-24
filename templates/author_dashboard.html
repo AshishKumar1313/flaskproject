@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block title %}Author Dashboard – FlaskBlog{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold"><i class="fas fa-pen-fancy me-2 text-primary"></i>My Posts</h3>
+    <a href="{{ url_for('main.create_post') }}" class="btn btn-primary">
+      <i class="fas fa-plus me-1"></i>New Post
+    </a>
+  </div>
+
+  {% if posts %}
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Title</th>
+            <th>Category</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Comments</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for post in posts %}
+          <tr>
+            <td>
+              <a href="{{ url_for('main.post_detail', post_id=post.id) }}" class="fw-semibold text-decoration-none text-dark">
+                {{ post.title[:60] }}{% if post.title|length > 60 %}…{% endif %}
+              </a>
+            </td>
+            <td>
+              {% if post.category %}
+              <span class="badge badge-cat">{{ post.category }}</span>
+              {% else %}<span class="text-muted">—</span>{% endif %}
+            </td>
+            <td>
+              {% if post.is_published %}
+              <span class="badge bg-success">Published</span>
+              {% else %}
+              <span class="badge bg-secondary">Draft</span>
+              {% endif %}
+            </td>
+            <td><small class="text-muted">{{ post.created_at.strftime('%b %d, %Y') }}</small></td>
+            <td><span class="badge bg-light text-dark">{{ post.comments|length }}</span></td>
+            <td>
+              <a href="{{ url_for('main.edit_post', post_id=post.id) }}" class="btn btn-sm btn-outline-primary me-1">
+                <i class="fas fa-edit"></i>
+              </a>
+              <form method="POST" action="{{ url_for('main.delete_post', post_id=post.id) }}" class="d-inline" onsubmit="return confirm('Delete this post?')">
+                {{ form.hidden_tag() }}
+                <button type="submit" class="btn btn-sm btn-outline-danger">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="text-center py-5 card shadow-sm">
+    <div class="card-body">
+      <i class="fas fa-feather fa-3x text-muted mb-3"></i>
+      <h5 class="text-muted">You haven't written any posts yet.</h5>
+      <a href="{{ url_for('main.create_post') }}" class="btn btn-primary mt-2">Write Your First Post</a>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
