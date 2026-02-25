@@ -18,6 +18,10 @@ def create_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['WTF_CSRF_ENABLED'] = True
 
+    # ── reCAPTCHA Config ──────────────────────────────────────────────────────
+    app.config['RECAPTCHA_SITE_KEY']   = os.environ.get('RECAPTCHA_SITE_KEY', '')
+    app.config['RECAPTCHA_SECRET_KEY'] = os.environ.get('RECAPTCHA_SECRET_KEY', '')
+
     # ── Extensions ────────────────────────────────────────────────────────────
     db.init_app(app)
     CSRFProtect(app)

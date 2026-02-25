@@ -1,13 +1,31 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
+from flask import Blueprint, render_template, redirect, url_for, flash, request, abort, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm
 from models import db, User, Post, Comment
 from forms import RegisterForm, LoginForm, PostForm, CommentForm
 from functools import wraps
+import requests
 import os
 
 main = Blueprint('main', __name__)
+
+# ── reCAPTCHA Helper ──────────────────────────────────────────────────────────
+def verify_recaptcha(token):
+    """Verify reCAPTCHA v2 token with Google's API. Returns True if valid."""
+    secret = current_app.config.get('RECAPTCHA_SECRET_KEY', '')
+    if not secret:
+        return True  # Skip verification if key not configured (dev fallback)
+    try:
+        resp = requests.post(
+            'https://www.google.com/recaptcha/api/siteverify',
+            data={'secret': secret, 'response': token},
+            timeout=5
+        )
+        result = resp.json()
+        return result.get('success', False)
+    except Exception:
+        return False
 
 # ── Role decorators ───────────────────────────────────────────────────────────
 def admin_required(f):
@@ -65,21 +83,49 @@ def register():
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
     form = RegisterForm()
+    recaptcha_site_key = current_app.config.get('RECAPTCHA_SITE_KEY', '')
+
     if form.validate_on_submit():
+        # ── Verify reCAPTCHA ──────────────────────────────────────────────────
+        token = request.form.get('g-recaptcha-response', '')
+        if not token:
+            flash('Please complete the CAPTCHA.', 'danger')
+            return render_template('login.html', form=form, mode='register',
+                                   recaptcha_site_key=recaptcha_site_key)
+        if not verify_recaptcha(token):
+            flash('CAPTCHA verification failed. Please try again.', 'danger')
+            return render_template('login.html', form=form, mode='register',
+                                   recaptcha_site_key=recaptcha_site_key)
+
         hashed = generate_password_hash(form.password.data)
         user = User(username=form.username.data, email=form.email.data, password_hash=hashed)
         db.session.add(user)
         db.session.commit()
         flash('Account created! You can now log in.', 'success')
         return redirect(url_for('main.login'))
-    return render_template('login.html', form=form, mode='register')
+
+    return render_template('login.html', form=form, mode='register',
+                           recaptcha_site_key=recaptcha_site_key)
 
 @main.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
     form = LoginForm()
+    recaptcha_site_key = current_app.config.get('RECAPTCHA_SITE_KEY', '')
+
     if form.validate_on_submit():
+        # ── Verify reCAPTCHA ──────────────────────────────────────────────────
+        token = request.form.get('g-recaptcha-response', '')
+        if not token:
+            flash('Please complete the CAPTCHA.', 'danger')
+            return render_template('login.html', form=form, mode='login',
+                                   recaptcha_site_key=recaptcha_site_key)
+        if not verify_recaptcha(token):
+            flash('CAPTCHA verification failed. Please try again.', 'danger')
+            return render_template('login.html', form=form, mode='login',
+                                   recaptcha_site_key=recaptcha_site_key)
+
         user = User.query.filter_by(email=form.email.data).first()
         if user and user.password_hash and check_password_hash(user.password_hash, form.password.data):
             login_user(user, remember=form.remember.data)
@@ -87,7 +133,9 @@ def login():
             flash(f'Welcome back, {user.username}!', 'success')
             return redirect(next_page or url_for('main.index'))
         flash('Invalid email or password.', 'danger')
-    return render_template('login.html', form=form, mode='login')
+
+    return render_template('login.html', form=form, mode='login',
+                           recaptcha_site_key=recaptcha_site_key)
 
 @main.route('/google-login', methods=['POST'])
 def google_login():
